@@ -121,6 +121,8 @@ SHELL_TRANSLATIONS = {
         'set_env': 'export {var}={value}',
         'path_sep': '/',
         'env_var_prefix': '$',
+        'check_gpu': 'nvidia-smi',
+        'disk_usage': 'df -h {path}',
     },
     'powershell': {
         'list_files': 'Get-ChildItem',
@@ -129,7 +131,13 @@ SHELL_TRANSLATIONS = {
         'set_env': '$env:{var} = "{value}"',
         'path_sep': '\\',
         'env_var_prefix': '$env:',
-    }
+        # Agents can expand this! Example:
+        'check_gpu': 'Get-Counter "\\GPU Process Memory\\Local Usage"',
+        'disk_usage': 'Get-PSDrive C | Select-Object Used,Free',
+        'list_processes': 'Get-Process',
+        'network_ports': 'Get-NetTCPConnection',
+    },
+    # Agents: Add cmd, zsh, fish, etc. as needed!
 }
 
 def detect_remote_shell():

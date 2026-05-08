@@ -311,6 +311,32 @@ else:
     result = harness.run_command("ls -la")
 ```
 
+### Expanding the Command Dictionary
+
+The `SHELL_TRANSLATIONS` dict in `agent-workspace/agent_helpers.py` is **editable by agents**. When you encounter a new shell or need more commands:
+
+**Add a new shell:**
+```python
+SHELL_TRANSLATIONS['cmd'] = {
+    'list_files': 'dir',
+    'read_file': 'type {file}',
+    'find_text': 'findstr "{pattern}" {file}',
+    'set_env': 'set {var}={value}',
+    'path_sep': '\\',
+    'env_var_prefix': '%',
+}
+```
+
+**Add more commands to existing shell:**
+```python
+SHELL_TRANSLATIONS['powershell'].update({
+    'check_gpu': 'Get-Counter "\\GPU Process Memory\\Local Usage"',
+    'network_adapters': 'Get-NetAdapter | Select-Object Name,Status',
+})
+```
+
+**Agents should update `run_shell_command()`** to use these dictionaries for automatic translation.
+
 ## Environment Variables
 
 | Variable | Description | Default |
