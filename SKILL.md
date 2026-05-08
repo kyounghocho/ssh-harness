@@ -205,6 +205,54 @@ See `agent-workspace/domain-skills/` for host-specific playbooks:
 4. **Close connections** when done (or use context manager)
 5. **Let agents write helpers** instead of repeating complex logic
 
+## Connection Failure Handling
+
+SSH Harness now includes automatic retry and detailed error messages.
+
+### Automatic Retries
+- `SSHHarness()` constructor retries connection **3 times** with exponential backoff
+- `inject_key()` retries **2 times** with delay
+
+### Specific Error Types
+The harness raises `ConnectionError` with clear messages:
+
+| Error Type | Cause | Solution |
+|------------|-------|-----------|
+| `Authentication failed` | Wrong username/password/key | Check `SSH_USER`, `SSH_PASSWORD`, `SSH_KEY_PATH` in `.env` |
+| `SSH protocol error` | SSH service issue, incompatible version | Verify SSH service on remote host |
+| `Connection timed out` | Network unreachable, firewall, wrong port | Check `SSH_HOST`, `SSH_PORT`, network connectivity |
+| `Could not connect after N attempts` | Multiple issues | Check all settings, try manual `ssh` first |
+
+### Testing Connection
+Use `test_connection()` for diagnostics:
+
+```python
+from ssh_harness import SSHHarness
+
+harness = SSHHarness()
+result = harness.test_connection()
+print(result)
+# Success: {'success': True, 'message': 'Successfully connected to ...', ...}
+# Failure: {'success': False, 'message': 'Authentication failed...', ...}
+```
+
+### Troubleshooting Steps
+1. **Test manually first**: `ssh user@host` from terminal
+2. **Check .env**: Ensure `SSH_HOST`, `SSH_USER` are correct
+3. **Firewall/Network**: Verify port 22 is open, host is reachable
+4. **Authentication**: 
+   - For key auth: ensure key exists and is added to remote `~/.ssh/authorized_keys`
+   - For password: ensure `SSH_PASSWORD` is set
+5. **View detailed error**: `test_connection()` returns the exact error message
+
+### Reconnection
+The `ensure_connection()` method automatically reconnects if the connection drops:
+
+```python
+harness.ensure_connection()  # Reconnects if needed
+result = harness.run_command("echo 'still connected'")
+```
+
 ## Environment Variables
 
 | Variable | Description | Default |
