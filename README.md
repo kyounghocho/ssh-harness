@@ -97,15 +97,41 @@ Agents create host-specific playbooks in `agent-workspace/domain-skills/`:
 
 ## Environment Variables
 
-See `.env.example`:
+See `.env.example` for single host and multi-host configurations:
 
 ```bash
+# Single host
 SSH_HOST=your_host
 SSH_PORT=22
 SSH_USER=your_user
-SSH_KEY_PATH=~/.ssh/id_rsa
-# SSH_PASSWORD=alternative_auth
+SSH_KEY_PATH=~/.ssh/id_ed25519
+
+# Multi-host (for agent swarms)
+SSH_HOST_1=192.168.1.10
+SSH_USER_1=user1
+SSH_PASS_1=password1  # Only for initial key injection
+
+SSH_HOST_2=192.168.1.20
+SSH_USER_2=user2
+SSH_PASS_2=password2
 ```
+
+### Automatic Key Setup for Agents
+
+Agents running in sandboxed environments can auto-setup SSH access:
+
+```python
+from ssh_harness import setup_ssh_access
+
+# Reads SSH_HOST_N, SSH_USER_N, SSH_PASS_N from .env
+results = setup_ssh_access()
+for r in results:
+    print(f"{r['host']}: {r['message']}")
+```
+
+This generates ED25519 keys and injects them to remote hosts via `sshpass` + `ssh-copy-id`.
+
+See [examples/auto_setup.md](examples/auto_setup.md) for full guide.
 
 ## Development
 

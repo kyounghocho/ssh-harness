@@ -180,3 +180,31 @@ class SSHHarness:
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+    
+    def setup_keys(self, password: Optional[str] = None):
+        """
+        Setup SSH keys for agent environment.
+        
+        Args:
+            password: Remote password (overrides SSH_PASS_1 env var)
+        
+        Returns:
+            dict: {"success": bool, "message": str}
+        """
+        from .keys import SSHKeyManager
+        
+        manager = SSHKeyManager()
+        
+        # Generate key if needed
+        gen_success, gen_msg = manager.generate_key()
+        if not gen_success:
+            return {"success": False, "message": gen_msg}
+        
+        # Use password from param or env
+        pwd = password or os.getenv("SSH_PASS_1")
+        if not pwd:
+            return {"success": False, "message": "No password provided. Set SSH_PASS_1 or pass password parameter."}
+        
+        # Inject key to current host
+        success, msg = manager.inject_key(self.host, self.user, pwd)
+        return {"success": success, "message": msg}
