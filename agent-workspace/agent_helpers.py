@@ -140,6 +140,12 @@ SHELL_TRANSLATIONS = {
         'disk_usage': 'Get-PSDrive C | Select-Object Used,Free',
         'list_processes': 'Get-Process',
         'network_ports': 'Get-NetTCPConnection',
+        # Windows Server specific
+        'list_services': 'Get-Service',
+        'start_service': 'Start-Service -Name "{service_name}"',
+        'stop_service': 'Stop-Service -Name "{service_name}"',
+        'system_info': 'Get-ComputerInfo | Select-Object WindowsProductName,OsVersion',
+        'network_config': 'Get-NetIPAddress',
     },
     # Agents: Add cmd, zsh, fish, etc. as needed!
 }
