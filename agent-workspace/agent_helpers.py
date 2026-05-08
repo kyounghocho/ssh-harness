@@ -123,6 +123,10 @@ SHELL_TRANSLATIONS = {
         'env_var_prefix': '$',
         'check_gpu': 'nvidia-smi',
         'disk_usage': 'df -h {path}',
+        # MLX commands (Apple Silicon)
+        'mlx_check': 'python -c "import mlx.core as mx; print(mx.metal.device_info())"',
+        'mlx_version': 'pip show mlx',
+        'mlx_models': 'ls -la ~/.mlx/models/',
     },
     'powershell': {
         'list_files': 'Get-ChildItem',
