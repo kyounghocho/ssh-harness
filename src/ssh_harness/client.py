@@ -169,6 +169,46 @@ class SSHHarness:
                 "host": self.host,
             }
     
+    def detect_shell(self) -> Dict[str, Any]:
+        """Detect remote shell type and return info.
+        
+        Returns:
+            Dict with 'type' (bash/powershell/unknown), 'hint' (str)
+        """
+        # Try PowerShell detection
+        try:
+            result = self.run_command("powershell -Command \"$PSVersionTable.PSVersion.Major\" 2>$null")
+            if result['exit_code'] == 0 and result['output'].strip().isdigit():
+                return {
+                    "type": "powershell", 
+                    "version": result['output'].strip(),
+                    "hint": "Use PowerShell syntax (Get-ChildItem, not ls)"
+                }
+        except:
+            pass
+        
+        # Check SHELL env var
+        result = self.run_command("echo $SHELL")
+        shell_path = result['output'].strip()
+        if 'bash' in shell_path:
+            return {"type": "bash", "path": shell_path, "hint": "Bash syntax (ls, grep, export)"}
+        elif 'zsh' in shell_path:
+            return {"type": "zsh", "path": shell_path, "hint": "Zsh syntax (similar to bash)"}
+        elif 'sh' in shell_path:
+            return {"type": "sh", "path": shell_path, "hint": "POSIX sh syntax (limited)"}
+        
+        # Fallback: check $0
+        result = self.run_command("echo $0")
+        shell = result['output'].strip()
+        if 'bash' in shell:
+            return {"type": "bash", "hint": "Bash syntax"}
+        elif 'zsh' in shell:
+            return {"type": "zsh", "hint": "Zsh syntax"}
+        elif 'powershell' in shell.lower() or 'pwsh' in shell.lower():
+            return {"type": "powershell", "hint": "PowerShell syntax"}
+        
+        return {"type": "unknown", "hint": "Assume bash, but verify with detect_shell()"}
+    
     def run_command(
         self,
         command: str,

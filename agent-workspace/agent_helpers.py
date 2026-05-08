@@ -111,3 +111,65 @@ def check_training_progress(log_path):
 
 # Agents: Add your custom helpers below this line!
 # ==================================================
+
+# Shell compatibility helpers
+SHELL_TRANSLATIONS = {
+    'bash': {
+        'list_files': 'ls -la',
+        'read_file': 'cat {file}',
+        'find_text': 'grep "{pattern}" {file}',
+        'set_env': 'export {var}={value}',
+        'path_sep': '/',
+        'env_var_prefix': '$',
+    },
+    'powershell': {
+        'list_files': 'Get-ChildItem',
+        'read_file': 'Get-Content {file}',
+        'find_text': 'Select-String -Pattern "{pattern}" {file}',
+        'set_env': '$env:{var} = "{value}"',
+        'path_sep': '\\',
+        'env_var_prefix': '$env:',
+    }
+}
+
+def detect_remote_shell():
+    """Detect remote shell type using SSHHarness.
+    
+    Returns:
+        Dict with 'type' (bash/powershell/unknown), 'hint' (str)
+    """
+    from ssh_harness import SSHHarness
+    harness = SSHHarness()
+    info = harness.detect_shell()
+    harness.close()
+    return info
+
+def run_shell_command(command, shell_type=None):
+    """Run a command with automatic shell detection if not provided.
+    
+    Args:
+        command: Command string (assumed bash if shell_type not given)
+        shell_type: 'bash', 'powershell', or None for auto-detect
+    
+    Returns:
+        Dict with 'output', 'error', 'exit_code'
+    """
+    from ssh_harness import SSHHarness
+    harness = SSHHarness()
+    
+    if shell_type is None:
+        info = harness.detect_shell()
+        shell_type = info.get('type', 'bash')
+    
+    # Simple translation for common commands (agents can expand)
+    if shell_type == 'powershell':
+        # Basic translations - agents should improve this
+        if command.strip().startswith('ls '):
+            command = command.replace('ls ', 'Get-ChildItem ', 1)
+        elif command.strip() == 'ls':
+            command = 'Get-ChildItem'
+        # Add more translations as needed
+    
+    result = harness.run_command(command)
+    harness.close()
+    return result

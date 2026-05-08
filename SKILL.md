@@ -253,6 +253,64 @@ harness.ensure_connection()  # Reconnects if needed
 result = harness.run_command("echo 'still connected'")
 ```
 
+## Shell Compatibility
+
+Remote hosts may use different shells: bash, zsh, PowerShell, cmd.exe. Agents often generate bash commands by default, which fail on PowerShell.
+
+### Detect Shell First
+
+```python
+from ssh_harness import SSHHarness
+
+harness = SSHHarness()
+info = harness.detect_shell()
+print(info)
+# Example output: {'type': 'bash', 'path': '/bin/bash', 'hint': 'Bash syntax (ls, grep, export)'}
+# Or: {'type': 'powershell', 'version': '5', 'hint': 'Use PowerShell syntax (Get-ChildItem, not ls)'}
+```
+
+### Common Command Translations
+
+| Task | Bash (Linux) | PowerShell (Windows) |
+|------|---------------|----------------------|
+| List files | `ls -la` | `Get-ChildItem` or `ls` (alias) |
+| Read file | `cat file.txt` | `Get-Content file.txt` |
+| Find text | `grep 'pattern' file` | `Select-String 'pattern' file` |
+| Set env var | `export VAR=value` | `$env:VAR = 'value'` |
+| Path separator | `/` | `\` |
+| Environment var | `$VAR` | `$env:VAR` |
+| Process list | `ps aux` | `Get-Process` |
+| Kill process | `kill PID` | `Stop-Process -Id PID` |
+| Network ports | `netstat -tuln` | `Get-NetTCPConnection` |
+
+### Best Practice for Agents
+
+1. **Always call `detect_shell()` first** when connecting to an unknown host.
+2. **If shell is PowerShell**, avoid bash-specific syntax:
+   - No `grep`, use `Select-String`
+   - No `export`, use `$env:VAR = 'value'`
+   - No `/path/to/file`, use `C:\path\to\file`
+3. **If shell is bash/zsh**, standard Linux commands work.
+4. **For Windows OpenSSH**, default shell is often cmd.exe or PowerShell. Use `detect_shell()` to confirm.
+5. **When in doubt**, run a simple command like `echo test` to verify.
+
+### Example Workflow
+
+```python
+harness = SSHHarness()
+info = harness.detect_shell()
+
+if info['type'] == 'powershell':
+    # Use PowerShell syntax
+    result = harness.run_command("Get-ChildItem C:\\Users")
+elif info['type'] in ('bash', 'zsh', 'sh'):
+    # Use bash syntax
+    result = harness.run_command("ls -la /home")
+else:
+    # Default to bash, but be cautious
+    result = harness.run_command("ls -la")
+```
+
 ## Environment Variables
 
 | Variable | Description | Default |
