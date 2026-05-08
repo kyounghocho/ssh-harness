@@ -82,14 +82,24 @@ result = run_command("echo $SHELL")
 print(result['output'])  # Should be /bin/bash or /bin/zsh
 ```
 
-### Windows / PowerShell remote
+### Remote Windows hosts (OpenSSH)
 
-Conda activation is not supported on Windows PowerShell. Use WSL or Cygwin instead, or run Conda commands directly:
+If the remote host is Windows (not Linux/WSL), Conda activation via `source` may not work because Windows OpenSSH uses `cmd.exe` or PowerShell by default.
 
+**Option 1: Use full path to python in Conda env (recommended for Windows remote)**
 ```python
-# Instead of activating, use full path to python in env
-result = run_command("/home/user/miniconda3/envs/my_env/bin/python script.py")
+# Windows example - use full path to env's python
+result = run_command("C:\\Users\\user\\miniconda3\\envs\\my_env\\python.exe script.py")
 ```
+
+**Option 2: Switch remote shell to bash (if using WSL on Windows)**
+```python
+# If remote is Windows but you have WSL, connect to WSL instead
+# Configure SSH to WSL, then conda activation works as normal
+result = run_command("python script.py", conda_env="my_env")
+```
+
+> **Note**: If your remote host is Linux (most common), Conda activation works regardless of whether your local machine uses PowerShell, Terminal, or any other client.
 
 ## Best Practices
 
