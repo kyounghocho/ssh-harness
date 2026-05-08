@@ -5,6 +5,7 @@ Provides persistent SSH connections with automatic reconnection.
 """
 
 import os
+import time
 import paramiko
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
@@ -45,8 +46,8 @@ class SSHHarness:
         self.client = None
         self._connect()
     
-    def _connect(self):
-        """Establish SSH connection."""
+    def _connect(self, retries=3, delay=2):
+        """Establish SSH connection with retries and specific error handling."""
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
@@ -57,22 +58,116 @@ class SSHHarness:
             "timeout": self.timeout,
         }
         
+        # Authentication setup
         if self.key_path:
             key_path = os.path.expanduser(self.key_path)
             connect_kwargs["key_filename"] = key_path
+            # Don't try agent if key file specified
+            connect_kwargs["allow_agent"] = False
+            connect_kwargs["look_for_keys"] = False
         elif self.password:
             connect_kwargs["password"] = self.password
+            connect_kwargs["allow_agent"] = False
+            connect_kwargs["look_for_keys"] = False
+        else:
+            # No explicit auth → try SSH agent and default keys
+            connect_kwargs["allow_agent"] = True
+            connect_kwargs["look_for_keys"] = True
         
-        try:
-            self.client.connect(**connect_kwargs)
-        except Exception as e:
-            print(f"✗ Connection failed: {e}")
-            raise
+        last_exception = None
+        for attempt in range(1, retries + 1):
+            try:
+                self.client.connect(**connect_kwargs)
+                return  # Success
+            except paramiko.AuthenticationException as e:
+                raise ConnectionError(
+                    f"Authentication failed for {self.user}@{self.host}: "
+                    f"Check username/password/key. (Attempt {attempt}/{retries})"
+                ) from e
+            except paramiko.SSHException as e:
+                last_exception = e
+                if attempt < retries:
+                    time.sleep(delay * attempt)  # Exponential backoff
+                    continue
+                raise ConnectionError(
+                    f"SSH protocol error connecting to {self.host}: {e}"
+                ) from e
+            except TimeoutError as e:
+                last_exception = e
+                if attempt < retries:
+                    time.sleep(delay * attempt)
+                    continue
+                raise ConnectionError(
+                    f"Connection timed out to {self.host}:{self.port} after {retries} attempts. "
+                    f"Check network/firewall."
+                ) from e
+            except Exception as e:
+                last_exception = e
+                if attempt < retries:
+                    time.sleep(delay * attempt)
+                    continue
+                raise ConnectionError(
+                    f"Failed to connect to {self.host}: {e}"
+                ) from e
+        
+        raise ConnectionError(
+            f"Could not connect to {self.host} after {retries} attempts. "
+            f"Last error: {last_exception}"
+        )
     
     def ensure_connection(self):
         """Ensure connection is alive, reconnect if needed."""
-        if not self.client or not self.client.get_transport().is_active():
+        try:
+            if (
+                self.client 
+                and self.client.get_transport() 
+                and self.client.get_transport().is_active()
+            ):
+                return  # Connection is fine
+        except Exception:
+            pass  # Transport might be closed
+        
+        # Need to reconnect
+        self._connect()
+    
+    def test_connection(self) -> Dict[str, Any]:
+        """Test SSH connection and return status dict.
+        
+        Returns:
+            Dict with 'success' (bool), 'message' (str), 'host' (str)
+        """
+        try:
+            # Close existing connection if any
+            if self.client:
+                try:
+                    self.client.close()
+                except:
+                    pass
+            
+            self.client = None
             self._connect()
+            
+            # Try a simple command
+            result = self.run_command("echo 'connection_test'")
+            if result["exit_code"] == 0:
+                return {
+                    "success": True, 
+                    "message": f"Successfully connected to {self.host}:{self.port}",
+                    "host": self.host,
+                    "port": self.port,
+                    "user": self.user,
+                }
+            return {
+                "success": False,
+                "message": f"Connected but test command failed (exit code {result['exit_code']})",
+                "host": self.host,
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": str(e),
+                "host": self.host,
+            }
     
     def run_command(
         self,

@@ -1,6 +1,7 @@
 """SSH Key management for agents - auto-setup SSH access."""
 
 import os
+import time
 import subprocess
 from pathlib import Path
 from dotenv import load_dotenv
@@ -32,8 +33,8 @@ class SSHKeyManager:
         except subprocess.CalledProcessError as e:
             return False, f"Key generation failed: {e.stderr.decode()}"
     
-    def inject_key(self, host, user, password):
-        """Inject public key to remote host using sshpass + ssh-copy-id."""
+    def inject_key(self, host, user, password, retries=2, delay=2):
+        """Inject public key to remote host with retry logic."""
         if not self.pub_key_path.exists():
             return False, "Public key not found. Run generate_key() first."
         
@@ -41,20 +42,41 @@ class SSHKeyManager:
         if subprocess.run(["which", "sshpass"], capture_output=True).returncode != 0:
             return False, "sshpass not installed. Install: brew install sshpass (macOS) or apt install sshpass (Linux)"
         
-        try:
-            result = subprocess.run([
-                "sshpass", "-p", password, "ssh-copy-id",
-                "-o", "StrictHostKeyChecking=accept-new",  # 안전: 새 호스트만 자동 수락
-                "-o", "UserKnownHostsFile=/dev/null",     # 임시: KnownHosts 무시
-                "-i", str(self.pub_key_path),
-                f"{user}@{host}"
-            ], capture_output=True, text=True, timeout=30)
-            
-            if result.returncode == 0:
-                return True, f"Key injected to {user}@{host}"
-            return False, f"ssh-copy-id failed: {result.stderr}"
-        except subprocess.TimeoutExpired:
-            return False, "Timeout during key injection"
+        last_error = None
+        for attempt in range(1, retries + 1):
+            try:
+                result = subprocess.run([
+                    "sshpass", "-p", password, "ssh-copy-id",
+                    "-o", "StrictHostKeyChecking=accept-new",
+                    "-o", "UserKnownHostsFile=/dev/null",
+                    "-i", str(self.pub_key_path),
+                    f"{user}@{host}"
+                ], capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0:
+                    return True, f"Key injected to {user}@{host} (attempt {attempt})"
+                
+                last_error = result.stderr.strip()
+                if attempt < retries:
+                    time.sleep(delay * attempt)
+                    continue
+                return False, f"ssh-copy-id failed: {last_error}"
+                
+            except subprocess.TimeoutExpired:
+                last_error = "Timeout during key injection"
+                if attempt < retries:
+                    time.sleep(delay * attempt)
+                    continue
+                return False, f"Timeout after {retries} attempts"
+                
+            except Exception as e:
+                last_error = str(e)
+                if attempt < retries:
+                    time.sleep(delay * attempt)
+                    continue
+                return False, f"Unexpected error: {last_error}"
+        
+        return False, f"Failed after {retries} attempts: {last_error}"
     
     def setup_all_from_env(self):
         """Read multiple hosts from .env and setup keys for each."""
