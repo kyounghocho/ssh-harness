@@ -1,0 +1,113 @@
+"""
+Agent-editable helper functions for SSH Harness.
+
+Agents can write custom helpers here when they need functionality
+that doesn't exist in the core ssh_harness package.
+
+This file is meant to be edited by LLM agents during execution.
+"""
+
+from ssh_harness import run_command, read_file, write_file, upload, download, check_gpu
+
+
+# Example helper: Get GPU temperature
+def get_gpu_temp():
+    """
+    Get GPU temperature.
+    
+    Returns:
+        Temperature in Celsius, or None if failed
+    """
+    result = run_command("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader")
+    if result['exit_code'] == 0:
+        try:
+            return int(result['output'].strip())
+        except ValueError:
+            return None
+    return None
+
+
+# Example helper: Check if a process is running
+def is_process_running(process_name):
+    """
+    Check if a process is running on remote host.
+    
+    Args:
+        process_name: Name of the process to check
+    
+    Returns:
+        True if running, False otherwise
+    """
+    result = run_command(f"pgrep -f '{process_name}'")
+    return result['exit_code'] == 0
+
+
+# Example helper: Get disk usage
+def get_disk_usage(path="/"):
+    """
+    Get disk usage for a path.
+    
+    Args:
+        path: Path to check (default: /)
+    
+    Returns:
+        Dict with 'total', 'used', 'free', 'percent'
+    """
+    result = run_command(f"df -h {path} | tail -1")
+    if result['exit_code'] == 0:
+        parts = result['output'].split()
+        if len(parts) >= 5:
+            return {
+                'filesystem': parts[0],
+                'total': parts[1],
+                'used': parts[2],
+                'free': parts[3],
+                'percent': parts[4],
+            }
+    return None
+
+
+# Example helper: Monitor training progress
+def check_training_progress(log_path):
+    """
+    Check ML training progress from log file.
+    
+    Args:
+        log_path: Path to training log file
+    
+    Returns:
+        Dict with 'epoch', 'loss', 'status' or None
+    """
+    content = read_file(log_path, max_lines=50)
+    lines = content.strip().split('\n')
+    
+    progress = {
+        'epoch': None,
+        'loss': None,
+        'status': 'unknown',
+    }
+    
+    for line in reversed(lines):
+        if 'epoch' in line.lower() and 'loss' in line.lower():
+            import re
+            epoch_match = re.search(r'epoch[^\d]*(\d+)', line.lower())
+            loss_match = re.search(r'loss[^\d]*([\d.]+)', line.lower())
+            
+            if epoch_match:
+                progress['epoch'] = int(epoch_match.group(1))
+            if loss_match:
+                progress['loss'] = float(loss_match.group(1))
+            break
+    
+    if 'complete' in content.lower():
+        progress['status'] = 'completed'
+    elif 'error' in content.lower():
+        progress['status'] = 'error'
+    elif progress['epoch'] is not None:
+        progress['status'] = 'training'
+    
+    return progress
+
+
+# Agents: Add your custom helpers below this line!
+# ==================================================
