@@ -135,7 +135,6 @@ harness = SSHHarness(
     port=22,
     user="your_user",
     key_path="~/.ssh/id_rsa",
-    conda_env="your_conda_env",
 )
 ```
 
@@ -216,7 +215,7 @@ See `agent-workspace/domain-skills/` for host-specific playbooks:
 | `SSH_KEY_PATH` | Path to SSH key | - |
 | `SSH_PASSWORD` | Password (alternative to key) | - |
 | `SSH_TIMEOUT` | Connection timeout | 300 |
-| `SSH_CONDA_ENV` | Conda env to auto-activate | - |
+| `SSH_CONDA_ENV` | (Optional) Conda env for bash/zsh | - |
 
 ## License
 

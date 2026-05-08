@@ -23,7 +23,6 @@ class SSHHarness:
         password: Optional[str] = None,
         key_path: Optional[str] = None,
         timeout: int = 300,
-        conda_env: Optional[str] = None,
     ):
         """
         Initialize SSH harness.
@@ -35,7 +34,6 @@ class SSHHarness:
             password: Password auth (default: SSH_PASSWORD env var)
             key_path: Path to SSH key (default: SSH_KEY_PATH env var)
             timeout: Connection timeout in seconds
-            conda_env: Conda environment to auto-activate
         """
         self.host = host or os.getenv("SSH_HOST", "localhost")
         self.port = port or int(os.getenv("SSH_PORT", "22"))
@@ -43,7 +41,6 @@ class SSHHarness:
         self.password = password or os.getenv("SSH_PASSWORD")
         self.key_path = key_path or os.getenv("SSH_KEY_PATH")
         self.timeout = timeout
-        self.conda_env = conda_env or os.getenv("SSH_CONDA_ENV")
         
         self.client = None
         self._connect()
@@ -89,16 +86,17 @@ class SSHHarness:
         Args:
             command: Command to execute
             timeout: Override default timeout
-            conda_env: Override default conda environment
+            conda_env: (Optional) Conda environment name to activate first.
+                       Only works on bash/zsh with conda installed.
         
         Returns:
             Dict with 'output', 'error', 'exit_code'
         """
         self.ensure_connection()
         
-        env = conda_env or self.conda_env
-        if env:
-            command = f"source ~/miniconda3/etc/profile.d/conda.sh && conda activate {env} && {command}"
+        # Only wrap with conda if explicitly requested
+        if conda_env:
+            command = f"source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null && conda activate {conda_env} 2>/dev/null; {command}"
         
         stdin, stdout, stderr = self.client.exec_command(
             command,

@@ -91,7 +91,7 @@ content = read_file("/path/to/file.txt")
 Agents create host-specific playbooks in `agent-workspace/domain-skills/`:
 
 - `remote-linux.md`: General remote Linux host
-- (Agents add more for AWS, GCP, WSL, etc.)
+- (Agents add more for AWS, GCP, etc.)
 
 > **Rule**: Domain skills are agent-generated only. Do not hand-author.
 

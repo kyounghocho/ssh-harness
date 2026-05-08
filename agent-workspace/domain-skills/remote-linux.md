@@ -7,7 +7,7 @@ This playbook covers controlling a general remote Linux host.
 - **Host**: your_host_ip
 - **Port**: 22 (or your SSH port)
 - **User**: your_username
-- **Environment**: Linux with optional Conda
+- **Environment**: Linux
 
 ## Setup
 
@@ -18,8 +18,9 @@ SSH_HOST=your_host_ip
 SSH_PORT=22
 SSH_USER=your_username
 SSH_KEY_PATH=~/.ssh/id_rsa
-SSH_CONDA_ENV=your_conda_env  # optional
 ```
+
+# Optional: See examples/conda_usage.md for Conda usage
 
 2. Test connection:
 
@@ -55,7 +56,9 @@ result = run_command("free -h")
 print(result['output'])
 ```
 
-### Run Python Script in Conda Env
+### (Optional) Run Python Script in Conda Env
+
+> **Note**: Conda activation only works on bash/zsh. See [examples/conda_usage.md](examples/conda_usage.md).
 
 ```python
 result = run_command("python my_script.py", conda_env="your_conda_env")
@@ -84,7 +87,6 @@ print("✓ Results downloaded")
 
 ## Tips
 
-- Use `SSH_CONDA_ENV` to auto-activate conda environment
 - For large file transfers, consider using `rsync` via `run_command()`
 - Always check `exit_code` for critical operations
 
@@ -103,7 +105,9 @@ systemctl status ssh
 ssh-keygen -R "[your_host_ip]:port"
 ```
 
-### Conda Env Not Found
+### (Optional) Conda Env Not Found
+
+> **Note**: Only applicable if using Conda on bash/zsh.
 
 ```python
 result = run_command("conda env list")

@@ -77,15 +77,13 @@ Hello from SSH Harness!
 Remote OS: Linux ...
 ```
 
-## Step 4: (Optional) Configure Conda Environment
+## Step 4: (Optional) Conda Environment
 
-If your remote host uses Conda (e.g., for ML workloads), set the conda environment:
+**Note**: Conda support is optional and only works on bash/zsh remote hosts with Conda installed.
 
-```bash
-SSH_CONDA_ENV=your_conda_env  # e.g., base, pytorch, ocr_final
-```
+If you need Conda activation, see [examples/conda_usage.md](examples/conda_usage.md).
 
-This will automatically activate the conda environment before each command.
+Setting `SSH_CONDA_ENV` in `.env` is **NOT** used automatically. You must explicitly pass `conda_env` parameter to `run_command()`.
 
 ## Step 5: Using with LLM Agents
 
