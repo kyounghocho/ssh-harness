@@ -1,33 +1,72 @@
-# Example: Mac MLX LLM
+# [Domain Name] Skill
 
-This is an example of a domain skill for Mac (Apple Silicon) hosts with MLX for LLM workloads.
+Template for agents to create domain-specific skills. Fill in the sections below.
 
 ## Connection
 
-- **Host type**: macOS (Apple Silicon M1/M2/M3)
-- **Shell**: zsh (default) or bash
-- **Framework**: MLX (Apple Silicon only)
+- **Host type**: (e.g., Ubuntu 22.04, Windows Server 2022, macOS Sonoma)
+- **Shell**: (e.g., bash, zsh, PowerShell, cmd.exe)
+- **GPU**: (e.g., NVIDIA RTX 3090, Apple M2, None)
+- **Architecture**: (e.g., x86_64, arm64)
 
 ## Quick Check
 
 ```python
 from ssh_harness import SSHHarness
 
-harness = SSHHarness()
-result = harness.run_command("python -c 'import mlx; print(mlx.__version__)'")
-print(result['output'])
+harness = SSHHarness()  # Assumes .env configured
+
+# Agent: Add quick verification commands here
+# Example:
+# result = harness.run_command("uname -a")
+# print(result['output'])
+
 harness.close()
 ```
 
 ## Common Commands
 
-| Task | Command (bash/zsh) |
-|------|-------------------|
-| Check MLX | `python -c "import mlx; print(mlx.__version__)"` |
-| Metal GPU info | `system_profiler SPDisplaysDataType` |
-| Run LLM | `python -m mlx_lm.generate --model ~/.mlx/models/mistral-7b` |
+| Task | Command (use correct shell syntax) |
+|------|------------------------------------|
+| Check GPU | (agent fills in) |
+| Check framework | (agent fills in) |
+| Run LLM | (agent fills in) |
+| Monitor training | (agent fills in) |
 
-## Notes
+## Environment Setup
 
-- Agents: Copy this to `agent-workspace/domain-skills/mac-mlx.md` and customize.
-- Expand `SHELL_TRANSLATIONS` in `agent_helpers.py` as needed.
+```bash
+# Agent: Add setup commands here
+```
+
+## Troubleshooting
+
+### Issue: (agent adds common issues)
+- Solution: (agent adds)
+
+## Example Workflow
+
+```python
+from ssh_harness import SSHHarness
+
+harness = SSHHarness()
+
+# Agent: fill in workflow steps
+# 1. Check environment
+# 2. Run task
+# 3. Verify result
+
+harness.close()
+```
+
+## Notes for Agents
+
+1. **Use `detect_shell()`** first to confirm shell type.
+2. **Follow shell syntax** from `SKILL.md` compatibility table.
+3. **Expand `SHELL_TRANSLATIONS`** in `agent_helpers.py` if needed.
+4. **Save this file** as `agent-workspace/domain-skills/[your-domain].md`.
+5. **Keep it concise** - only add what you actually need.
+
+---
+
+**Remember**: This file should be created by agents, not by humans. Edit freely!
