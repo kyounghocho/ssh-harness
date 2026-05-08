@@ -192,10 +192,20 @@ if check_training_done():
 
 ## Domain Skills
 
-See `agent-workspace/domain-skills/` for host-specific playbooks:
+**⚠️ Rule: Domain skills are agent-generated only. Do not hand-author.**
 
-- `remote-linux.md`: Controlling a general remote Linux host
-- (Agents can create more!)
+- `agent-workspace/domain-skills/` is **owned by agents**.
+- Agents create host-specific playbooks when needed.
+- Humans may provide **templates** (see `agent-workspace/domain-skills/template.md`).
+- **Examples** for reference: `examples/linux-cuda-example.md`, `examples/window-cuda-example.md`, `examples/mac-mlx-example.md`.
+
+**What agents should do:**
+1. Use `detect_shell()` to confirm remote environment.
+2. Copy `template.md` to `agent-workspace/domain-skills/[my-domain].md`.
+3. Fill in commands specific to the host (LLM inference, GPU checks, etc.).
+4. Expand `SHELL_TRANSLATIONS` in `agent_helpers.py` if needed.
+
+**Remember**: We provide shell compatibility guides (`SKILL.md`) and translation dictionaries (`agent_helpers.py`) to help agents avoid syntax errors. But the domain skills themselves are for agents to create.
 
 ## Best Practices
 
